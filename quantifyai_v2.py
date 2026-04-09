@@ -1,4 +1,7 @@
 import streamlit as st
+import google.generativeai as genai
+# ... your other imports ...
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -124,3 +127,10 @@ with tab2:
     st.dataframe(matrix, use_container_width=True)
 
 st.caption("QuantifyAI v0.2.3 | Fixed datetime & grouping issues")
+# Setup API Key
+# Note: In Streamlit Cloud, you set this in 'Settings > Secrets'
+if "GOOGLE_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    st.error("Please set the GOOGLE_API_KEY in your secrets!")

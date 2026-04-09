@@ -6,6 +6,7 @@ from statsmodels.tsa.arima.model import ARIMA
 from prophet import Prophet
 from sklearn.ensemble import IsolationForest
 from datetime import datetime
+from io import StringIO   # ← This is the fix
 
 st.set_page_config(page_title="QuantifyAI v0.2 - Malaria ACTs", layout="wide")
 st.title("🚀 QuantifyAI v0.2")
@@ -31,7 +32,7 @@ def load_default_data():
 2025-04,District A,MC-002,RDT Kits,350,680,280,15,65.8,460
 2025-04,District B,MC-001,ACT 6x4 Tablets,420,860,350,5,62.1,410
 2025-04,District B,MC-002,RDT Kits,280,590,210,20,62.1,410"""
-    df = pd.read_csv(pd.compat.StringIO(data))
+    df = pd.read_csv(StringIO(data))   # ← Fixed here
     df['date'] = pd.to_datetime(df['date'])
     return df
 
@@ -111,7 +112,7 @@ with forecast_tab1:
             arima_model = ARIMA(cons_series, order=(1,1,1)).fit()
             arima_fc = arima_model.forecast(horizon)
         except:
-            arima_fc = cons_series[-1] * np.ones(horizon)
+            arima_fc = pd.Series([cons_series.iloc[-1]] * horizon, index=pd.date_range(start=cons_series.index[-1], periods=horizon, freq='MS'))
         
         # AI Prophet with covariates (rainfall + cases)
         prophet_data = sub.reset_index()[['date', 'consumption_qty', 'rainfall_mm', 'reported_cases']]
@@ -121,11 +122,10 @@ with forecast_tab1:
         m.add_regressor('reported_cases')
         m.fit(prophet_data)
         future = m.make_future_dataframe(periods=horizon, freq='MS')
-        # Simple future covariates (repeat last or trend)
         last_rain = prophet_data['rainfall_mm'].iloc[-1]
         last_cases = prophet_data['reported_cases'].iloc[-1]
         future['rainfall_mm'] = last_rain
-        future['reported_cases'] = last_cases * 1.05  # slight upward trend assumption
+        future['reported_cases'] = last_cases * 1.05
         prophet_fc = m.predict(future)
         
         # Ensemble
@@ -137,7 +137,7 @@ with forecast_tab1:
         fig.add_trace(go.Scatter(x=arima_fc.index, y=arima_fc.values, name="QAT-style ARIMA", line=dict(dash="dash", color="orange")))
         fig.add_trace(go.Scatter(x=prophet_fc['ds'].iloc[-horizon:], y=prophet_fc['yhat'].iloc[-horizon:], name="AI Prophet (with rainfall + cases)", line=dict(color="green")))
         fig.add_trace(go.Scatter(x=future['ds'].iloc[-horizon:], y=ensemble_fc, name="AI Ensemble (Recommended)", line=dict(color="red", width=4)))
-        fig.update_layout(title=f"{prod} -  Forecast", xaxis_title="Date", yaxis_title="Quantity", height=450)
+        fig.update_layout(title=f"{prod} Forecast", xaxis_title="Date", yaxis_title="Quantity", height=450)
         st.plotly_chart(fig, use_container_width=True)
         
         st.metric(f"Projected {prod} Need (next 12 months)", f"{int(ensemble_fc[:12].sum()):,}")
@@ -150,21 +150,9 @@ with forecast_tab2:
     matrix['MOS'] = (matrix['stock_on_hand'] / matrix['AMC']).round(1)
     matrix = matrix.rename(columns={'consumption_qty': 'Last Month Consumption'})
     st.dataframe(matrix, use_container_width=True)
-    st.info("✅ This replicates QAT's core stock monitoring view. Full pipeline + optimization in v0.3.")
+    st.info("✅ This replicates QAT's core stock monitoring view.")
 
-# ------------------- NEXT STEPS -------------------
 st.divider()
-st.success("✅ v0.2 is live with your exact data format!")
-st.write("**What’s next in v0.3 (ready when you confirm):**")
-st.write("• Full Supply Planning & AI Procurement Optimizer (PuLP) – shipment schedule that minimizes stock-outs & expiries")
-st.write("• Scenario simulator (e.g., 'What if rainfall increases 20%?')")
-st.write("• District-level detailed views + PDF report export")
-st.write("• Uncertainty bands & expiry-aware planning")
+st.success("✅ Fixed! If you still see an error after reboot, click Manage app → View logs and share the new error.")
 
-feedback = st.text_area("Your feedback / requests for v0.3 (e.g., add lead time, MOQ, specific reports, district filters, etc.)")
-
-if st.button("🚀 Generate v0.3 Code"):
-    st.balloons()
-    st.write("Great! Reply with your feedback above and I'll deliver v0.3 immediately.")
-
-st.caption("QuantifyAI v0.2 | Built for MOH Program Managers, Partners & District Teams | ACT-focused with AI malaria seasonality")
+st.caption("QuantifyAI v0.2 | Built for Malawi MOH | ACT-focused with AI seasonality")

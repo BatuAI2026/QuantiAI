@@ -156,3 +156,48 @@ st.divider()
 st.success("✅ Fixed! If you still see an error after reboot, click Manage app → View logs and share the new error.")
 
 st.caption("QuantifyAI v0.2 | Built for Malawi MOH | ACT-focused with AI seasonality")
+import streamlit as st
+import pandas as pd
+import numpy as np
+import plotly.graph_objects as go
+from statsmodels.tsa.arima.model import ARIMA
+from prophet import Prophet
+from sklearn.ensemble import IsolationForest
+from io import StringIO
+
+st.set_page_config(page_title="QuantifyAI v0.2", layout="wide")
+st.title("🚀 QuantifyAI v0.2")
+st.caption("AI-Enhanced Quantification Tool for Malaria Commodities | Focused on ACTs (Malawi-style)")
+
+# ------------------- DEFAULT DATA (fallback) -------------------
+@st.cache_data
+def load_default_data():
+    data = """date,district,product_code,product_name,consumption_qty,stock_on_hand,shipments_received,adjustments,rainfall_mm,reported_cases
+2025-01,District A,MC-001,ACT 6x4 Tablets,450,1250,600,-20,152.3,420
+... (keep the same sample data as before) ..."""
+    # (paste the full sample CSV string from previous version here if you want)
+    df = pd.read_csv(StringIO(data))
+    df['date'] = pd.to_datetime(df['date'])
+    return df
+
+df = load_default_data()
+
+# ------------------- UPLOAD -------------------
+st.sidebar.header("📤 Upload Your Real Data")
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel (same columns)", type=["csv", "xlsx", "xls"])
+
+if uploaded_file is not None:
+    try:
+        if uploaded_file.name.endswith('.csv'):
+            df = pd.read_csv(uploaded_file)
+        else:
+            df = pd.read_excel(uploaded_file, engine='openpyxl')   # Explicit engine
+        df['date'] = pd.to_datetime(df['date'])
+        st.sidebar.success(f"✅ Loaded {uploaded_file.name} successfully! ({len(df)} rows)")
+    except Exception as e:
+        st.sidebar.error(f"Upload error: {str(e)}")
+        st.sidebar.info("Tip: Make sure your Excel file has the exact column names and 'date' column is in YYYY-MM format.")
+
+# Rest of the code remains the same as the previous version (data prep, tabs, forecasting, etc.)
+
+# ... (copy the rest from the previous fixed code: view_level, working_df, tabs, forecasting, stock matrix, etc.)

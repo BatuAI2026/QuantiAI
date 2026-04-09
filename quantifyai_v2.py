@@ -1,4 +1,14 @@
 import streamlit as st
+import google.generativeai as genai
+# ... your other imports ...
+# Setup API Key
+# Note: In Streamlit Cloud, you set this in 'Settings > Secrets'
+if "GOOGLE_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
+else:
+    st.error("Please set the GOOGLE_API_KEY in your secrets!")
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
@@ -124,4 +134,19 @@ with tab2:
     st.dataframe(matrix, use_container_width=True)
 
 st.caption("QuantifyAI v0.2.3 | Fixed datetime & grouping issues")
+with st.sidebar:
+    st.divider()
+    st.subheader("🤖 AI Logistics Advisor")
+    
+    # Initialize Chat History
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
+    # Display Chat History (inside the sidebar)
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+
+    # Chat Input
+    if prompt := st.chat_input("Ask about stockouts..."):
+        # ... (rest of the logic from the previous reply) ...

@@ -205,3 +205,4 @@ with tab3:
         st.info("💡 **Quick Tips:**\n- Ask about procurement recommendations\n- Request stock warnings\n- Ask for monthly ordering suggestions\n- Query seasonal patterns")
 
 st.caption("QuantifyAI v0.2.3 | With Monthly Forecasts & AI Advisor")
+pip install anthropic
